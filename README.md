@@ -114,12 +114,6 @@ sudo systemctl start wg-gesucht-bot
 sudo journalctl -u wg-gesucht-bot -f
 ```
 
-Files and Git Hygiene
----------------------
-Sensitive or local state files are ignored by git:
-- `config.yaml`
-- `message.txt`
-- `session.json`
 
 Use `config.example.yaml` and `message.example.txt` as templates for publishing.
 
