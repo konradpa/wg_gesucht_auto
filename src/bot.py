@@ -195,10 +195,27 @@ class WgGesuchtBot:
         )
         return any(word in lowered for word in keywords)
 
-    def _is_time_limited(self, offer: Dict) -> bool:
+    def _is_time_limited(self, offer: Dict, detail: Optional[Dict] = None) -> bool:
         duration = offer.get('duration')
         if duration is not None and str(duration).strip().lower() not in ('', '0', '0.0', 'null', 'none'):
             return True
+
+        available_to = offer.get('available_to_date')
+        if self._has_real_end_date(available_to):
+            return True
+
+        if detail:
+            available_to_detail = detail.get('available_to_date')
+            if self._has_real_end_date(available_to_detail):
+                return True
+
+        title = offer.get('offer_title') or offer.get('title') or ''
+        return self._contains_time_limit_keyword(title)
+
+    def _needs_detail_time_check(self, offer: Dict) -> bool:
+        duration = offer.get('duration')
+        if duration is not None and str(duration).strip().lower() not in ('', '0', '0.0', 'null', 'none'):
+            return False
 
         available_to = (
             offer.get('available_to_date') or
@@ -206,10 +223,13 @@ class WgGesuchtBot:
             offer.get('available_to_date_string')
         )
         if self._has_real_end_date(available_to):
-            return True
+            return False
 
         title = offer.get('offer_title') or offer.get('title') or ''
-        return self._contains_time_limit_keyword(title)
+        if self._contains_time_limit_keyword(title):
+            return False
+
+        return True
 
     def _filter_time_limited(self, offers: List[Dict]) -> List[Dict]:
         """Exclude zwischenmiete/time-limited offers when configured."""
@@ -223,6 +243,15 @@ class WgGesuchtBot:
             if self._is_time_limited(offer):
                 removed += 1
                 continue
+            if self._needs_detail_time_check(offer):
+                offer_id = offer.get('id') or offer.get('offer_id')
+                if offer_id:
+                    detail = self.client.get_offer_detail(str(offer_id))
+                    if detail:
+                        offer['_detail'] = detail
+                    if self._is_time_limited(offer, detail):
+                        removed += 1
+                        continue
             kept.append(offer)
 
         if removed:
@@ -239,6 +268,14 @@ class WgGesuchtBot:
         for offer in offers:
             if self._is_time_limited(offer):
                 continue
+            if self._needs_detail_time_check(offer):
+                offer_id = offer.get('id') or offer.get('offer_id')
+                if offer_id:
+                    detail = self.client.get_offer_detail(str(offer_id))
+                    if detail:
+                        offer['_detail'] = detail
+                    if self._is_time_limited(offer, detail):
+                        continue
             kept.append(offer)
         return kept
 
@@ -342,14 +379,61 @@ class WgGesuchtBot:
 
     def _get_recipient_name(self, offer: Dict, detail: Optional[Dict] = None) -> str:
         """Extract recipient name from offer"""
+        user_data = detail.get('user_data', {}) if detail else {}
         # Try various field names
         name = (
             offer.get('user_name') or
             offer.get('contact_name') or
+            (detail.get('contact_name') if detail else None) or
+            (detail.get('user_name') if detail else None) or
+            (user_data.get('public_name') if user_data else None) or
+            (user_data.get('company_name') if user_data else None) or
             (detail.get('user', {}).get('first_name') if detail else None) or
             'du'
         )
         return name.split()[0] if name else 'du'  # Use first name only
+
+    def _build_description(self, detail: Dict) -> str:
+        """Build a combined description from available detail fields."""
+        if not detail:
+            return ""
+        description = detail.get('description') or ""
+        if description:
+            return description
+        parts = []
+        for key in ('freetext_flatshare', 'freetext_property_description', 'freetext_area_description'):
+            text = detail.get(key) or ""
+            if isinstance(text, str) and text.strip():
+                parts.append(text.strip())
+        return "\n\n".join(parts)
+
+    def _build_gesucht_wird(self, detail: Dict) -> str:
+        """Build a 'Gesucht wird' summary from detail fields."""
+        if not detail:
+            return ""
+        freetext_other = detail.get('freetext_other') or ""
+        if isinstance(freetext_other, str) and freetext_other.strip():
+            return freetext_other.strip()
+
+        age_from = detail.get('searching_for_age_from')
+        age_to = detail.get('searching_for_age_to')
+        gender = detail.get('searching_for_gender')
+        parts = []
+        if age_from or age_to:
+            parts.append(f"Alter {age_from or ''}-{age_to or ''}".strip('-'))
+        if gender is not None:
+            parts.append(f"Geschlecht: {gender}")
+        return ", ".join(p for p in parts if p)
+
+    def _build_availability(self, detail: Dict) -> Dict[str, str]:
+        """Extract availability dates from detail."""
+        if not detail:
+            return {"from": "", "to": ""}
+        available_from = detail.get('available_from_date') or ""
+        available_to = detail.get('available_to_date') or ""
+        if isinstance(available_to, str) and available_to.strip() in ("00.00.0000", "0", ""):
+            available_to = ""
+        return {"from": str(available_from) if available_from else "", "to": str(available_to) if available_to else ""}
 
     def _prepare_message(self, offer: Dict, detail: Optional[Dict] = None) -> str:
         """Prepare message for an offer"""
@@ -357,11 +441,25 @@ class WgGesuchtBot:
         
         # Try Gemini personalization
         if self.gemini and detail:
+            availability = self._build_availability(detail)
+            advertiser_name = (
+                (detail.get('user_data', {}).get('public_name') if detail.get('user_data') else None) or
+                (detail.get('user_data', {}).get('company_name') if detail.get('user_data') else None) or
+                detail.get('contact_name') or
+                detail.get('user_name') or
+                ''
+            )
+            if not advertiser_name:
+                advertiser_name = recipient_name
             listing_info = {
-                'title': offer.get('title', ''),
-                'description': detail.get('description', '') or detail.get('freetext_property_description', ''),
-                'district': offer.get('district', ''),
-                'rent': offer.get('rent', '')
+                'title': offer.get('title') or offer.get('offer_title', ''),
+                'description': self._build_description(detail),
+                'district': offer.get('district') or offer.get('district_custom') or offer.get('area') or offer.get('city_quarter') or '',
+                'rent': offer.get('rent') or offer.get('total_costs') or '',
+                'gesucht_wird': self._build_gesucht_wird(detail),
+                'availability_from': availability.get('from', ''),
+                'availability_to': availability.get('to', ''),
+                'advertiser_name': advertiser_name,
             }
             
             personalized = self.gemini.personalize_message(
@@ -444,7 +542,7 @@ class WgGesuchtBot:
             # Get details for AI personalization
             detail = None
             if self.gemini:
-                detail = self.client.get_offer_detail(offer_id)
+                detail = offer.get('_detail') or self.client.get_offer_detail(offer_id)
 
             # Prepare message
             message = self._prepare_message(offer, detail)
