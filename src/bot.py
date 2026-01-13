@@ -11,6 +11,7 @@ from typing import Optional, List, Dict, Set
 
 from .wg_api import WgGesuchtClient
 from .gemini_helper import GeminiHelper
+from .logger import get_logger
 
 
 class WgGesuchtBot:
@@ -23,7 +24,7 @@ class WgGesuchtBot:
         try:
             self.client.set_auth_mode(auth_mode)
         except ValueError as e:
-            print(f"⚠ Invalid auth_mode '{auth_mode}', defaulting to mobile")
+            get_logger().warning(f"Invalid auth_mode '{auth_mode}', defaulting to mobile")
         self.gemini: Optional[GeminiHelper] = None
         self.contacted_file = Path(__file__).parent.parent / "contacted.json"
         self.session_file = Path(__file__).parent.parent / "session.json"
@@ -39,7 +40,7 @@ class WgGesuchtBot:
                     model=config['gemini'].get('model', 'gemini-1.5-flash')
                 )
             except Exception as e:
-                print(f"⚠ Gemini init failed: {e}, continuing without AI")
+                get_logger().warning(f"Gemini init failed: {e}, continuing without AI")
 
     def _load_message_template(self) -> str:
         """Load message template from file"""
@@ -383,29 +384,39 @@ class WgGesuchtBot:
         Returns:
             Number of messages sent
         """
+        logger = get_logger()
+        logger.start_run()
+        
         settings = self.config.get('settings', {})
         dry_run = settings.get('dry_run', True)
         max_messages = settings.get('max_messages_per_run', 5)
         delay = settings.get('delay_between_messages', 10)
-
-        print("\n" + "="*50)
-        print(f"🏠 WG-Gesucht Bot Run - {time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print("="*50)
+        
+        logger.set_stats(dry_run=dry_run)
+        
+        if dry_run:
+            logger.info("🔸 Running in DRY RUN mode (no messages will be sent)")
 
         # Login
         if not self.login():
-            print("✗ Login failed!")
+            logger.log_error("Login failed!")
+            logger.end_run(success=False)
             return 0
 
         # Get city ID
         city_id = self._find_city_id()
         if not city_id:
+            logger.log_error("City not found")
+            logger.end_run(success=False)
             return 0
 
         # Get offers (paginate to find enough filtered results)
         offers = self._collect_filtered_offers(city_id)
+        logger.set_stats(offers_found=len(offers) if offers else 0)
+        
         if not offers:
-            print("No offers matched filters")
+            logger.info("No offers matched filters")
+            logger.end_run(success=True)
             return 0
 
         # Filter out already contacted
@@ -413,10 +424,12 @@ class WgGesuchtBot:
             o for o in offers 
             if str(o.get('id') or o.get('offer_id')) not in self.contacted_ids
         ]
-        print(f"New offers to contact: {len(new_offers)}")
+        logger.set_stats(offers_filtered=len(offers), offers_new=len(new_offers))
+        logger.info(f"New offers to contact: {len(new_offers)}")
 
         if not new_offers:
-            print("✓ All offers already contacted")
+            logger.info("✓ All offers already contacted")
+            logger.end_run(success=True)
             return 0
 
         # Send messages
@@ -426,7 +439,7 @@ class WgGesuchtBot:
             offer_id = str(offer.get('id') or offer.get('offer_id'))
             title = (offer.get('title') or offer.get('offer_title') or 'Unknown')[:50]
             
-            print(f"\n→ Processing: {title} (ID: {offer_id})")
+            logger.info(f"\n→ Processing: {title} (ID: {offer_id})")
 
             # Get details for AI personalization
             detail = None
@@ -437,17 +450,20 @@ class WgGesuchtBot:
             message = self._prepare_message(offer, detail)
 
             if dry_run:
-                print(f"  [DRY RUN] Would send message:")
-                print(f"  {message[:100]}...")
+                logger.info(f"  [DRY RUN] Would send message:")
+                logger.info(f"  {message[:100]}...")
+                logger.log_contacted(offer_id, title, success=True)
             else:
                 result = self.client.contact_offer(offer_id, message)
                 if result:
-                    print(f"  ✓ Message sent!")
+                    logger.info(f"  ✓ Message sent!")
                     messages_sent += 1
                     self.contacted_ids.add(offer_id)
                     self._save_contacted()
+                    logger.log_contacted(offer_id, title, success=True)
                 else:
-                    print(f"  ✗ Failed to send message")
+                    logger.info(f"  ✗ Failed to send message")
+                    logger.log_contacted(offer_id, title, success=False)
 
             if dry_run and mark_in_dry_run:
                 self.contacted_ids.add(offer_id)
@@ -457,6 +473,5 @@ class WgGesuchtBot:
             if messages_sent < max_messages - 1:
                 time.sleep(delay)
 
-        print(f"\n{'='*50}")
-        print(f"✓ Run complete. Messages sent: {messages_sent}")
+        logger.end_run(success=True)
         return messages_sent

@@ -9,7 +9,7 @@ Features
 - Scheduled runs
 - Duplicate prevention
 - Bezirk filtering (with pagination to avoid missing matches)
-- Optional Gemini personalization
+- Optional Gemini personalization of messages
 - Exclude time-limited offers (Zwischenmiete)
 
 Requirements
@@ -120,7 +120,6 @@ Sensitive or local state files are ignored by git:
 - `config.yaml`
 - `message.txt`
 - `session.json`
-- `contacted.json`
 
 Use `config.example.yaml` and `message.example.txt` as templates for publishing.
 

@@ -45,7 +45,7 @@ WICHTIGE REGELN:
 3. Bleib authentisch und nicht zu übertrieben freundlich
 4. Die Nachricht sollte etwa gleich lang bleiben
 5. Schreibe auf Deutsch
-6. Ersetze {{name}} mit dem echten Namen
+6. Ersetze {{name}} mit dem echten Namen falls vorhanden.
 
 ORIGINALNACHRICHT:
 {base_message}

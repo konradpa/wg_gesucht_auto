@@ -17,6 +17,7 @@ debug_screenshot.png
 .env
 .env.*
 *.log
+logs/
 
 # IDE
 .vscode/
