@@ -60,6 +60,7 @@ Config Notes
 - `target_filtered_offers`: how many filtered offers to collect before stopping (0 = auto).
 - `contact_zwischenmiete`: set false to exclude time-limited offers.
 - `mark_contacted_in_dry_run`: keep false to avoid polluting `contacted.json`.
+- `contact_email`, `contact_phone`: optional contact info Gemini can include if the listing asks for it.
 
 Deployment (Server + systemd)
 -----------------------------

@@ -425,6 +425,9 @@ class WgGesuchtBot:
         
         # Try Gemini personalization
         if self.gemini and detail:
+            settings = self.config.get('settings', {})
+            contact_email = settings.get('contact_email', '')
+            contact_phone = settings.get('contact_phone', '')
             availability = self._build_availability(detail)
             advertiser_name = (
                 (detail.get('user_data', {}).get('public_name') if detail.get('user_data') else None) or
@@ -444,6 +447,8 @@ class WgGesuchtBot:
                 'availability_from': availability.get('from', ''),
                 'availability_to': availability.get('to', ''),
                 'advertiser_name': advertiser_name,
+                'contact_email': contact_email,
+                'contact_phone': contact_phone,
             }
             
             personalized = self.gemini.personalize_message(

@@ -40,6 +40,8 @@ class GeminiHelper:
         availability_from = listing_details.get('availability_from', '')
         availability_to = listing_details.get('availability_to', '')
         advertiser_name = listing_details.get('advertiser_name', '')
+        contact_email = listing_details.get('contact_email', '')
+        contact_phone = listing_details.get('contact_phone', '')
         
         prompt = f"""Du bist ein freundlicher WG-Bewerber. Personalisiere die folgende Nachricht basierend auf der WG-Anzeige.
 
@@ -51,6 +53,7 @@ WICHTIGE REGELN:
 5. Schreibe auf Deutsch
 6. Ersetze {{name}} mit dem echten Namen falls vorhanden.
 7. Verwende Kommas statt Gedankenstrichen (kein " - ").
+8. Kontakt (Email/Telefon) nur falls in der Beschreibung explizit gefragt.
 
 ORIGINALNACHRICHT:
 {base_message}
@@ -63,6 +66,7 @@ Frei ab: {availability_from}
 Frei bis: {availability_to}
 Gesucht wird: {gesucht[:500]}
 Anbieter: {advertiser_name}
+Kontakt (nur falls noetig): {contact_email} {contact_phone}
 Beschreibung: {description[:500]}
 
 EMPFÄNGER: {recipient_name}

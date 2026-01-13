@@ -29,3 +29,5 @@ settings:
   delay_between_messages: 20  # seconds between messages
   dry_run: true  # Set to false to actually send messages
   mark_contacted_in_dry_run: false  # Track dry-run offers as contacted
+  contact_email: ""  # Optional: include if asked in description
+  contact_phone: ""  # Optional: include if asked in description
