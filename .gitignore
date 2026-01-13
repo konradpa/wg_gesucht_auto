@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# Config and data files (contain sensitive info)
+config.yaml
+session.json
+contacted.json
+message.txt
+messages_export.json
+captured_requests.json
+debug_screenshot.png
+.env
+.env.*
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

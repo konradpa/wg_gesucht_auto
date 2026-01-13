@@ -1,0 +1,10 @@
+Hallo {name},
+
+ich habe eure Anzeige gesehen und bin sehr interessiert an dem Zimmer.
+
+Kurz zu mir: [kurze Beschreibung].
+
+Ich freue mich ueber eine Rueckmeldung und bin zeitlich flexibel.
+
+Liebe Gruese,
+[Dein Name]

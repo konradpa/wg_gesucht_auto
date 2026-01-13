@@ -1,0 +1,15 @@
+[Unit]
+Description=WG-Gesucht Automation Bot
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/wg_gesucht_auto
+Environment="PATH=/home/YOUR_USERNAME/wg_gesucht_auto/.venv/bin"
+ExecStart=/home/YOUR_USERNAME/wg_gesucht_auto/.venv/bin/python3 run.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

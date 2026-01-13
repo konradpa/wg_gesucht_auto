@@ -1,0 +1,34 @@
+wg_gesucht:
+  email: "you@example.com"
+  password: "your-password"
+  auth_mode: "web"  # web or mobile
+  verification_code: ""  # optional 2FA code for web login
+
+search:
+  city: "Hamburg"
+  # Filter by specific districts (leave empty for all)
+  bezirk:
+    - "Altona-Altstadt"
+    - "Altona-Nord"
+    - "Eimsbuettel"
+  max_price: 650
+  min_size: 0
+  # Categories: 0=WG-Zimmer, 1=1-Zimmer-Wohnung, 2=Wohnung, 3=Haus
+  categories: "0"
+  limit: 20  # offers per page
+  max_pages: 5  # pages to scan before stopping
+  target_filtered_offers: 0  # 0 = auto (max_messages_per_run)
+  contact_zwischenmiete: false  # Set true to include time-limited offers
+
+gemini:
+  api_key: ""  # Optional Gemini API key
+  enabled: false
+  model: "gemini-1.5-flash"
+
+settings:
+  interval_minutes: 20
+  max_messages_per_run: 2
+  delay_between_messages: 20  # seconds between messages
+  dry_run: true  # Set to false to actually send messages
+  prompt_2fa: true  # Prompt for 2FA code when required
+  mark_contacted_in_dry_run: false  # Track dry-run offers as contacted
