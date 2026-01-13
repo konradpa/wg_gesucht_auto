@@ -11,6 +11,7 @@ Features
 - Bezirk filtering (with pagination to avoid missing matches)
 - Optional Gemini personalization of messages
 - Exclude time-limited offers (Zwischenmiete)
+- Run logging and status tracking
 
 Requirements
 ------------
@@ -54,7 +55,6 @@ python run.py
 
 Config Notes
 ------------
-- `auth_mode`: use `web` (recommended).
 - `bezirk`: list of districts to include.
 - `limit`, `max_pages`: increase if you filter heavily and only get a few matches.
 - `target_filtered_offers`: how many filtered offers to collect before stopping (0 = auto).
@@ -108,18 +108,19 @@ sudo systemctl enable wg-gesucht-bot
 sudo systemctl start wg-gesucht-bot
 ```
 
-5) Logs
+5) Logs and Status
 
 ```bash
+# View systemd logs
 sudo journalctl -u wg-gesucht-bot -f
+
+# Check bot status and history
+python3 status.py
+
+# View detailed log file
+cat logs/bot.log
 ```
 
-Files and Git Hygiene
----------------------
-Sensitive or local state files are ignored by git:
-- `config.yaml`
-- `message.txt`
-- `session.json`
 
 Use `config.example.yaml` and `message.example.txt` as templates for publishing.
 

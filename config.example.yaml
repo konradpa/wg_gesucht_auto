@@ -1,8 +1,6 @@
 wg_gesucht:
   email: "you@example.com"
   password: "your-password"
-  auth_mode: "web"  # web or mobile
-  verification_code: ""  # optional 2FA code for web login
 
 search:
   city: "Hamburg"
@@ -30,5 +28,4 @@ settings:
   max_messages_per_run: 2
   delay_between_messages: 20  # seconds between messages
   dry_run: true  # Set to false to actually send messages
-  prompt_2fa: true  # Prompt for 2FA code when required
   mark_contacted_in_dry_run: false  # Track dry-run offers as contacted

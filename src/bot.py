@@ -20,11 +20,6 @@ class WgGesuchtBot:
     def __init__(self, config: dict):
         self.config = config
         self.client = WgGesuchtClient()
-        auth_mode = config.get('wg_gesucht', {}).get('auth_mode', 'mobile')
-        try:
-            self.client.set_auth_mode(auth_mode)
-        except ValueError as e:
-            get_logger().warning(f"Invalid auth_mode '{auth_mode}', defaulting to mobile")
         self.gemini: Optional[GeminiHelper] = None
         self.contacted_file = Path(__file__).parent.parent / "contacted.json"
         self.session_file = Path(__file__).parent.parent / "session.json"
@@ -74,22 +69,13 @@ class WgGesuchtBot:
         if self.session_file.exists():
             try:
                 data = json.loads(self.session_file.read_text())
-                saved_mode = data.get('auth_mode', 'mobile')
-                if saved_mode != self.client.auth_mode:
-                    return False
                 if data.get('access_token'):
                     self.client.import_account(data)
-                    if self.client.auth_mode == 'web':
-                        response = self.client.get_conversations_web()
-                        if response is not None:
-                            print("✓ Restored previous session (web)")
-                            return True
-                    else:
-                        # Test if session is still valid
-                        profile = self.client.my_profile()
-                        if profile:
-                            print("✓ Restored previous session")
-                            return True
+                    # Test if session is still valid
+                    response = self.client.get_conversations()
+                    if response is not None:
+                        print("✓ Restored previous session")
+                        return True
             except Exception:
                 pass
         return False
@@ -103,10 +89,8 @@ class WgGesuchtBot:
         # Fresh login
         email = self.config['wg_gesucht']['email']
         password = self.config['wg_gesucht']['password']
-        verification_code = self.config.get('wg_gesucht', {}).get('verification_code')
-        prompt_for_code = self.config.get('settings', {}).get('prompt_2fa', True)
 
-        if self.client.login(email, password, verification_code=verification_code, prompt_for_code=prompt_for_code):
+        if self.client.login(email, password):
             self._save_session()
             return True
         return False
