@@ -67,16 +67,12 @@ def test_login(config: dict) -> None:
     from src.wg_api import WgGesuchtClient
     
     client = WgGesuchtClient()
-    auth_mode = config.get('wg_gesucht', {}).get('auth_mode', 'mobile')
-    client.set_auth_mode(auth_mode)
     email = config['wg_gesucht']['email']
     password = config['wg_gesucht']['password']
-    verification_code = config.get('wg_gesucht', {}).get('verification_code')
-    prompt_for_code = config.get('settings', {}).get('prompt_2fa', True)
     
     print(f"Testing login for: {email}")
     
-    if client.login(email, password, verification_code=verification_code, prompt_for_code=prompt_for_code):
+    if client.login(email, password):
         print("✓ Login successful!")
         print(f"  User ID: {client.user_id}")
         
@@ -86,15 +82,10 @@ def test_login(config: dict) -> None:
         if cities:
             print(f"✓ City lookup works: {cities[0].get('city_name')}")
         
-        if auth_mode == 'web':
-            conversations = client.get_conversations_web()
-            if conversations is not None:
-                print("✓ Conversations access works (web)")
-        else:
-            # Test profile
-            profile = client.my_profile()
-            if profile:
-                print(f"✓ Profile access works")
+        # Test conversations
+        conversations = client.get_conversations()
+        if conversations is not None:
+            print("✓ Conversations access works")
     else:
         print("✗ Login failed!")
 
