@@ -18,10 +18,14 @@ search:
   target_filtered_offers: 0  # 0 = auto (max_messages_per_run)
   contact_zwischenmiete: false  # Set true to include time-limited offers
 
-gemini:
-  api_key: ""  # Optional Gemini API key
+llm:
   enabled: false
+  # Supported: gemini, anthropic, openai, openrouter, groq, together, openai_compatible
+  provider: "gemini"
+  api_key: ""  # Optional API key for the selected provider
   model: "gemini-1.5-flash"
+  # Optional custom endpoint (mostly for OpenAI-compatible providers)
+  base_url: ""
 
 settings:
   interval_minutes: 20

@@ -4,13 +4,12 @@ Main WG-Gesucht Bot Logic
 
 import json
 import time
-import os
 import re
 from pathlib import Path
 from typing import Optional, List, Dict, Set
 
 from .wg_api import WgGesuchtClient
-from .gemini_helper import GeminiHelper
+from .llm_helper import LLMHelper
 from .logger import get_logger
 
 
@@ -20,22 +19,18 @@ class WgGesuchtBot:
     def __init__(self, config: dict):
         self.config = config
         self.client = WgGesuchtClient()
-        self.gemini: Optional[GeminiHelper] = None
+        self.llm: Optional[LLMHelper] = None
         self.contacted_file = Path(__file__).parent.parent / "contacted.json"
         self.session_file = Path(__file__).parent.parent / "session.json"
         self.message_template = self._load_message_template()
         self.contacted_ids: Set[str] = self._load_contacted()
         self.city_id: Optional[str] = None
 
-        # Initialize Gemini if enabled
-        if config.get('gemini', {}).get('enabled') and config.get('gemini', {}).get('api_key'):
-            try:
-                self.gemini = GeminiHelper(
-                    api_key=config['gemini']['api_key'],
-                    model=config['gemini'].get('model', 'gemini-1.5-flash')
-                )
-            except Exception as e:
-                get_logger().warning(f"Gemini init failed: {e}, continuing without AI")
+        # Initialize optional AI personalization (supports legacy `gemini` config)
+        try:
+            self.llm = LLMHelper.from_config(config)
+        except Exception as e:
+            get_logger().warning(f"AI init failed: {e}, continuing without AI")
 
     def _load_message_template(self) -> str:
         """Load message template from file"""
@@ -423,8 +418,8 @@ class WgGesuchtBot:
         """Prepare message for an offer"""
         recipient_name = self._get_recipient_name(offer, detail)
         
-        # Try Gemini personalization
-        if self.gemini and detail:
+        # Try AI personalization
+        if self.llm and detail:
             settings = self.config.get('settings', {})
             contact_email = settings.get('contact_email', '')
             contact_phone = settings.get('contact_phone', '')
@@ -451,14 +446,14 @@ class WgGesuchtBot:
                 'contact_phone': contact_phone,
             }
             
-            personalized = self.gemini.personalize_message(
+            personalized = self.llm.personalize_message(
                 self.message_template,
                 listing_info,
                 recipient_name
             )
             
             if personalized:
-                print(f"  ✓ Used Gemini personalization")
+                print(f"  ✓ Used {self.llm.display_name} personalization")
                 return personalized
 
         # Fallback to template
@@ -530,7 +525,7 @@ class WgGesuchtBot:
 
             # Get details for AI personalization
             detail = None
-            if self.gemini:
+            if self.llm:
                 detail = offer.get('_detail') or self.client.get_offer_detail(offer_id)
 
             # Prepare message

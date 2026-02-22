@@ -24,7 +24,7 @@ def load_config() -> dict:
     
     if not config_path.exists():
         print("✗ config.yaml not found!")
-        print("  Please copy config.yaml.example to config.yaml and fill in your details")
+        print("  Please copy config.example.yaml to config.yaml and fill in your details")
         sys.exit(1)
     
     with open(config_path, 'r', encoding='utf-8') as f:
@@ -34,6 +34,7 @@ def load_config() -> dict:
 def run_once(config: dict, dry_run: bool = None) -> None:
     """Run the bot once"""
     if dry_run is not None:
+        config.setdefault('settings', {})
         config['settings']['dry_run'] = dry_run
     
     bot = WgGesuchtBot(config)
@@ -90,20 +91,26 @@ def test_login(config: dict) -> None:
         print("✗ Login failed!")
 
 
-def test_gemini(config: dict) -> None:
-    """Test Gemini API"""
-    from src.gemini_helper import test_gemini as _test
-    
-    api_key = config.get('gemini', {}).get('api_key')
-    if not api_key:
-        print("✗ No Gemini API key in config")
+def test_llm(config: dict) -> None:
+    """Test configured AI provider (supports legacy Gemini config)."""
+    from src.llm_helper import LLMHelper, resolve_llm_config
+
+    resolved = resolve_llm_config(config, require_enabled=False)
+    if not resolved:
+        print("✗ No LLM API key/config found")
+        print("  Add an `llm:` block (or legacy `gemini:` block) to config.yaml")
         return
-    
-    print("Testing Gemini API...")
-    if _test(api_key):
-        print("✓ Gemini API works!")
-    else:
-        print("✗ Gemini API test failed")
+
+    provider_name = resolved.get("source") or resolved.get("provider")
+    print(f"Testing AI provider: {provider_name}")
+    try:
+        helper = LLMHelper.from_config(config, require_enabled=False)
+        if helper and helper.test_connection():
+            print(f"✓ {helper.display_name} API works!")
+        else:
+            print("✗ LLM API test failed")
+    except Exception as e:
+        print(f"✗ LLM API test failed: {e}")
 
 
 def main():
@@ -116,7 +123,7 @@ Examples:
   python run.py --once           # Run once only
   python run.py --once --dry-run # Run once in dry-run mode
   python run.py --test-login     # Test login only
-  python run.py --test-gemini    # Test Gemini API
+  python run.py --test-llm       # Test configured AI provider
         """
     )
     
@@ -141,9 +148,14 @@ Examples:
         help='Test login only'
     )
     parser.add_argument(
+        '--test-llm',
+        action='store_true',
+        help='Test configured AI provider (llm or legacy gemini config)'
+    )
+    parser.add_argument(
         '--test-gemini',
         action='store_true',
-        help='Test Gemini API only'
+        help='Alias for --test-llm (legacy name)'
     )
     
     args = parser.parse_args()
@@ -156,8 +168,8 @@ Examples:
         test_login(config)
         return
     
-    if args.test_gemini:
-        test_gemini(config)
+    if args.test_llm or args.test_gemini:
+        test_llm(config)
         return
     
     # Determine dry_run setting
