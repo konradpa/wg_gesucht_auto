@@ -20,6 +20,9 @@ class BotLogger:
         self.log_file = self.log_dir / "bot.log"
         self.runs_file = self.log_dir / "runs.json"
         
+        # Clear log file if older than 24 hours
+        self._rotate_log_if_needed()
+        
         # Setup Python logger
         self.logger = logging.getLogger("wg-gesucht-bot")
         self.logger.setLevel(logging.DEBUG)
@@ -163,6 +166,18 @@ class BotLogger:
             return diff.total_seconds() < hours * 3600
         except Exception:
             return False
+    
+    def _rotate_log_if_needed(self) -> None:
+        """Clear the log file if it's older than 24 hours"""
+        if not self.log_file.exists():
+            return
+        try:
+            mtime = datetime.fromtimestamp(self.log_file.stat().st_mtime)
+            age_hours = (datetime.now() - mtime).total_seconds() / 3600
+            if age_hours >= 24:
+                self.log_file.write_text("")
+        except Exception:
+            pass
 
 
 # Global logger instance
