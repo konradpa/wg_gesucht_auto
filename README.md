@@ -1,35 +1,16 @@
-# 🏠 WG-Gesucht Bot
+# WG-Gesucht Bot
 
-**Automatically send messages to WG-Gesucht listings that match your search criteria.**
+A Python bot that finds WG-Gesucht listings matching your criteria and sends a message to new matches.
 
-![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue)
-![License MIT](https://img.shields.io/badge/License-MIT-green)
+It can filter listings by district, price, size, category, and rental type. Message personalization with Gemini, Anthropic, OpenAI, OpenRouter, Groq, Together, or another OpenAI-compatible endpoint is optional.
 
-Stop refreshing WG-Gesucht every 20 minutes — let the bot do it for you. It searches for new listings, filters them by your preferences (district, price, room type), and sends your message automatically. Optionally uses **AI personalization** (Gemini, Anthropic, OpenAI, OpenRouter, Groq, Together, or any OpenAI-compatible endpoint) to tailor messages based on the listing description.
+## Setup
 
----
+Requires Python 3.9 or newer.
 
-## What It Does
+### Local installation
 
-- 🔍 **Searches** WG-Gesucht for new listings matching your criteria
-- 📬 **Sends messages** to new listings automatically
-- 🏘️ **Filters by district** — only contact listings in your preferred Bezirke
-- 🚫 **Skips Zwischenmiete** — optionally exclude time-limited offers
-- 🤖 **AI personalization** — use Gemini or other LLM providers (optional)
-- 🔁 **Runs on a schedule** — checks every X minutes so you never miss a listing
-- 📋 **Tracks contacted listings** — never sends duplicate messages
-
----
-
-## Quick Start
-
-Choose your preferred setup method:
-
-### 🐍 Option A: Python
-
-**1. Requirements:** Python 3.9 or newer. Check with `python3 --version`.
-
-**2. Clone and install**
+1. Clone the repository and install the dependencies.
 
 ```bash
 git clone https://github.com/konradpa/wg_gesucht_auto.git
@@ -39,50 +20,41 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**3. Run the setup wizard**
+2. Run the setup wizard.
 
 ```bash
 python setup.py
 ```
 
-This walks you through creating `config.yaml` and `message.txt` interactively.
-
-Or create them manually:
+The wizard creates `config.yaml` and `message.txt`. To create them manually instead:
 
 ```bash
 cp config.example.yaml config.yaml
 cp message.example.txt message.txt
 ```
 
-**4. Test your login**
+3. Test the login.
 
 ```bash
 python run.py --test-login
 ```
 
-**5. Do a dry run** (searches but doesn't send messages)
+4. Search without sending messages.
 
 ```bash
 python run.py --once --dry-run
 ```
 
-**6. Send messages**
+5. Send messages once or start the scheduled process.
 
 ```bash
-# Send once
 python run.py --once --send
-
-# Run on a schedule (keeps checking for new listings)
 python run.py
 ```
 
----
+### Server installation
 
-### 🖥️ Option B: Server Deployment (24/7)
-
-To run the bot continuously without keeping your laptop open, deploy it to a cheap Linux server (e.g. [Hetzner](https://www.hetzner.com/cloud/) at ~€4/month).
-
-**1. Upload to your server**
+To run the bot continuously, copy it to a Linux server:
 
 ```bash
 rsync -avz --exclude='.venv' --exclude='__pycache__' \
@@ -90,7 +62,7 @@ rsync -avz --exclude='.venv' --exclude='__pycache__' \
   ./ your_user@your_server_ip:~/wg_gesucht_auto/
 ```
 
-**2. SSH in and run the deploy script**
+Connect to the server and run the deployment script:
 
 ```bash
 ssh your_user@your_server_ip
@@ -98,16 +70,14 @@ cd ~/wg_gesucht_auto
 ./deploy_server.sh
 ```
 
-**3. Create your config** (if not uploaded)
+The deployment script creates `config.yaml` and `message.txt` from the example files when they do not already exist. Edit them before starting the service:
 
 ```bash
-cp config.example.yaml config.yaml
-cp message.example.txt message.txt
 nano config.yaml
 nano message.txt
 ```
 
-**4. Install as a system service** (auto-starts on boot)
+Install the systemd service:
 
 ```bash
 sudo cp wg-gesucht-bot.service /etc/systemd/system/
@@ -117,78 +87,88 @@ sudo systemctl enable wg-gesucht-bot
 sudo systemctl start wg-gesucht-bot
 ```
 
-**5. View logs**
+View logs and status:
 
 ```bash
-sudo journalctl -u wg-gesucht-bot -f    # live system logs
-python3 status.py                         # bot status summary
-cat logs/bot.log                          # detailed log file
+sudo journalctl -u wg-gesucht-bot -f
+python3 status.py
+cat logs/bot.log
 ```
-
----
 
 ## Configuration
 
-All settings live in `config.yaml`. Here's what each option does:
+All settings are stored in `config.yaml`.
 
-### WG-Gesucht Account
+### Account
 
 | Option | Description |
-|--------|-------------|
-| `email` | Your WG-Gesucht login email |
-| `password` | Your WG-Gesucht password |
+| --- | --- |
+| `email` | WG-Gesucht login email |
+| `password` | WG-Gesucht password |
 
-### Search Settings
+### Search
 
 | Option | Default | Description |
-|--------|---------|-------------|
-| `city` | `"Hamburg"` | City to search in |
-| `bezirk` | `[]` | List of districts to include. Leave empty `[]` for all districts |
-| `max_price` | `650` | Maximum monthly rent in € |
+| --- | --- | --- |
+| `city` | `"Hamburg"` | City to search |
+| `bezirk` | `[]` | Districts to include. An empty list includes all districts |
+| `max_price` | `650` | Maximum monthly rent in euros |
 | `min_size` | `0` | Minimum room size in m² |
-| `categories` | `"0"` | What to search for: `0` = WG room, `1` = studio, `2` = apartment, `3` = house |
-| `limit` | `20` | Listings per page (increase if you filter heavily) |
-| `max_pages` | `5` | Pages to scan per run |
-| `target_filtered_offers` | `0` | How many filtered results to collect before stopping. `0` = automatic |
-| `contact_zwischenmiete` | `false` | Set `true` to include time-limited/sublet offers |
+| `categories` | `"0"` | `0` for a WG room, `1` for a studio, `2` for an apartment, `3` for a house |
+| `limit` | `20` | Listings loaded per page |
+| `max_pages` | `5` | Pages scanned per run |
+| `target_filtered_offers` | `0` | Number of matching results to collect before stopping. `0` selects this automatically |
+| `contact_zwischenmiete` | `false` | Whether to include temporary rentals and sublets |
 
-### LLM Personalization (Optional)
+### Message personalization
 
 | Option | Default | Description |
-|--------|---------|-------------|
-| `enabled` | `false` | Set `true` to enable AI message personalization |
+| --- | --- | --- |
+| `enabled` | `false` | Enables LLM-based message personalization |
 | `provider` | `"gemini"` | `gemini`, `anthropic`, `openai`, `openrouter`, `groq`, `together`, or `openai_compatible` |
 | `api_key` | `""` | API key for the selected provider |
-| `model` | `"gemini-1.5-flash"` | Model name to use |
-| `base_url` | `""` | Optional custom endpoint for OpenAI-compatible providers |
+| `model` | `"gemini-1.5-flash"` | Model name |
+| `base_url` | `""` | Custom endpoint for an OpenAI-compatible provider |
 
-Example providers:
-- Gemini: `provider: "gemini"` (get key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey))
-- Anthropic (Claude): `provider: "anthropic"`
-- OpenAI: `provider: "openai"`
-- OpenRouter: `provider: "openrouter"` (base URL auto-fills)
-- Groq/Together: `provider: "groq"` or `provider: "together"` (base URL auto-fills)
-- Custom/local endpoint: `provider: "openai_compatible"` + set `base_url`
+Provider examples:
 
-### Bot Settings
+```yaml
+provider: "gemini"
+provider: "anthropic"
+provider: "openai"
+provider: "openrouter"
+provider: "groq"
+provider: "together"
+provider: "openai_compatible"
+```
+
+Gemini API keys are available from [Google AI Studio](https://aistudio.google.com/apikey). OpenRouter, Groq, and Together use their default base URLs. Set `base_url` when using a custom or local endpoint.
+
+To enable personalization, set `llm.enabled` to `true`, configure the provider, API key, and model, then run:
+
+```bash
+python run.py --test-llm
+```
+
+Existing `gemini:` configurations remain supported.
+
+### Bot
 
 | Option | Default | Description |
-|--------|---------|-------------|
-| `interval_minutes` | `20` | How often the bot checks for new listings |
-| `max_messages_per_run` | `2` | Max messages to send per check |
-| `delay_between_messages` | `20` | Seconds to wait between sending messages |
-| `dry_run` | `true` | When `true`, the bot searches but doesn't actually send messages. Set to `false` when ready |
-| `mark_contacted_in_dry_run` | `false` | Track listings as contacted even during dry runs |
-| `contact_email` | `""` | Your email — included in messages only if the listing asks for it |
-| `contact_phone` | `""` | Your phone — included in messages only if the listing asks for it |
+| --- | --- | --- |
+| `interval_minutes` | `20` | Time between searches |
+| `max_messages_per_run` | `2` | Maximum messages sent per search |
+| `delay_between_messages` | `20` | Delay between messages in seconds |
+| `dry_run` | `true` | Searches without sending messages |
+| `mark_contacted_in_dry_run` | `false` | Records listings as contacted during dry runs |
+| `contact_email` | `""` | Email added when a listing asks for it |
+| `contact_phone` | `""` | Phone number added when a listing asks for it |
 
----
+## Message template
 
-## Message Template
+The message template is stored in `message.txt`. Use `{name}` for the contact name.
 
-Your message template lives in `message.txt`. Use `{name}` as a placeholder for the listing contact's name:
-
-```
+```text
 Hallo {name},
 
 ich habe eure Anzeige gesehen und bin sehr interessiert an dem Zimmer.
@@ -201,72 +181,45 @@ Liebe Grüße,
 Max
 ```
 
-**With AI personalization enabled**, the bot takes this template and personalizes it for each listing — adding references to the specific district, something from the description, etc. The tone and length stay similar to your template.
+Without personalization, the bot sends the template after replacing `{name}`. When personalization is enabled, it adapts the message to the listing while keeping the template's tone and length. If personalization fails, the original template is used.
 
-**Without AI personalization**, the bot sends your template as-is, replacing `{name}` with the contact name.
+## Commands
 
----
+| Command | Description |
+| --- | --- |
+| `python run.py` | Start the scheduled process |
+| `python run.py --once --dry-run` | Search once without sending messages |
+| `python run.py --once --send` | Search once and send messages |
+| `python run.py --test-login` | Test the WG-Gesucht login |
+| `python run.py --test-llm` | Test the configured LLM provider |
+| `python run.py --test-gemini` | Legacy alias for `--test-llm` |
+| `python status.py` | Show recent activity |
+| `python setup.py` | Run the setup wizard |
 
-## AI Personalization
+## Troubleshooting
 
-AI personalization is **completely optional** but can increase your response rate by making messages feel personal rather than copy-pasted.
+### Login fails
 
-**How to set it up:**
+Check the email and password in `config.yaml`, confirm that the same credentials work on [WG-Gesucht](https://www.wg-gesucht.de), then run `python run.py --test-login`.
 
-1. Pick a provider (`gemini`, `anthropic`, `openai`, `openrouter`, `groq`, `together`, or `openai_compatible`)
-2. Add your API key to `config.yaml` under `llm.api_key`
-3. Set `llm.enabled` to `true`
-4. Set `llm.provider`, `llm.model`, and optionally `llm.base_url`
-5. Test it: `python run.py --test-llm`
+### No messages are sent
 
-Legacy `gemini:` configs are still supported for compatibility.
+The listings may already be recorded in `contacted.json` or excluded by the filters. Confirm that `dry_run` is `false`, or use the `--send` option. If needed, widen the districts or increase `max_price`.
 
----
+Delete `contacted.json` only when you intentionally want to reset the contact history.
 
-## FAQ & Troubleshooting
+### No listings are found
 
-**"Login failed!"**
-- Double-check your email and password in `config.yaml`
-- Make sure you can log in on [wg-gesucht.de](https://www.wg-gesucht.de) with those credentials
-- Try `python run.py --test-login` for details
+Check that the city name matches WG-Gesucht, review the selected categories, and increase `max_pages` if the filters are strict.
 
-**"Bot runs but sends 0 messages"**
-- This usually means all found listings were already contacted or filtered out
-- Check `contacted.json` — if you're just testing, delete it to reset
-- Make sure `dry_run` is set to `false` (or use `--send` flag)
-- Try widening your filters (add more districts, increase `max_price`)
+### Personalization fails
 
-**"No offers found"**
-- Verify the city name matches WG-Gesucht exactly
-- Try different categories (e.g. `"0"` for WG rooms)
-- Increase `max_pages` if you have strict filters
-
-**"AI/LLM error"**
-- Test your API key/config: `python run.py --test-llm`
-- Double-check `llm.provider`, `llm.model`, and `llm.base_url` (if using OpenRouter/Groq/Together/custom endpoint)
-- The bot falls back to your template message if AI personalization fails, so messages still get sent
-
----
-
-## Commands Reference
-
-| Command | What it does |
-|---------|-------------|
-| `python run.py` | Start the bot on a schedule |
-| `python run.py --once --dry-run` | Search once, don't send messages |
-| `python run.py --once --send` | Search once, send messages |
-| `python run.py --test-login` | Test your WG-Gesucht login |
-| `python run.py --test-llm` | Test your configured AI provider |
-| `python run.py --test-gemini` | Alias for `--test-llm` (legacy name) |
-| `python status.py` | Show bot status and recent activity |
-| `python setup.py` | Run the interactive setup wizard |
-
----
+Run `python run.py --test-llm` and check `llm.provider`, `llm.model`, `llm.api_key`, and `llm.base_url`. The bot uses the original message template if personalization is unavailable.
 
 ## Disclaimer
 
-This is an **unofficial** tool and is not affiliated with WG-Gesucht. Use it at your own risk and be mindful of WG-Gesucht's terms of service. Be reasonable with check intervals — don't spam the platform.
+This is an unofficial project and is not affiliated with WG-Gesucht. Use it responsibly and follow the platform's terms of service.
 
 ## License
 
-[MIT](LICENSE) — feel free to use, modify, and share.
+[MIT](LICENSE)
