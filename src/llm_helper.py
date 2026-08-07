@@ -161,9 +161,10 @@ WICHTIGE REGELN:
 6. Ersetze {{name}} mit dem echten Namen falls vorhanden.
 7. Verwende Kommas statt Gedankenstrichen (kein " - ").
 8. Kontakt (Email/Telefon) nur falls in der Beschreibung explizit gefragt.
+9. Erfinde keine persönlichen Details, Verfügbarkeiten oder Interessen.
 
 ORIGINALNACHRICHT:
-{base_message}
+{base_message}x
 
 WG-ANZEIGE:
 Titel: {title}
