@@ -26,7 +26,7 @@ class WgGesuchtBot:
         self.contacted_ids: Set[str] = self._load_contacted()
         self.city_id: Optional[str] = None
 
-        # Initialize optional AI personalization (supports legacy `gemini` config)
+        # Initialize optional AI personalization from the unified `llm` config.
         try:
             self.llm = LLMHelper.from_config(config)
         except Exception as e:

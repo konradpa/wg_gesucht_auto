@@ -158,8 +158,6 @@ To enable personalization, set `llm.enabled` to `true`, configure the provider, 
 python run.py --test-llm
 ```
 
-Existing `gemini:` configurations remain supported.
-
 ### Bot
 
 | Option | Default | Description |
@@ -200,7 +198,6 @@ Without personalization, the bot sends the template after replacing `{name}`. Wh
 | `python run.py --once --send` | Search once and send messages |
 | `python run.py --test-login` | Test the WG-Gesucht login |
 | `python run.py --test-llm` | Test the configured LLM provider |
-| `python run.py --test-gemini` | Legacy alias for `--test-llm` |
 | `python status.py` | Show recent activity |
 | `python setup.py` | Run the setup wizard |
 

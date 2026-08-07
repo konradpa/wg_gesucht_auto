@@ -43,8 +43,7 @@ def resolve_llm_config(config: dict, require_enabled: bool = True) -> Optional[D
     """
     Resolve LLM settings from config.
 
-    Prefers the new `llm` block and falls back to legacy `gemini` for backward
-    compatibility.
+    Resolve the unified `llm` configuration block.
     """
     llm = config.get("llm")
     if isinstance(llm, dict):
@@ -67,27 +66,6 @@ def resolve_llm_config(config: dict, require_enabled: bool = True) -> Optional[D
             "api_key": api_key,
             "model": model,
             "base_url": base_url,
-        }
-
-    # Legacy config support
-    gemini = config.get("gemini")
-    if isinstance(gemini, dict):
-        enabled = bool(gemini.get("enabled", False))
-        api_key = _normalize_text(gemini.get("api_key"))
-        model = _normalize_text(gemini.get("model")) or DEFAULT_MODELS["gemini"]
-
-        if require_enabled and not enabled:
-            return None
-        if not api_key:
-            return None
-
-        return {
-            "enabled": "true" if enabled else "false",
-            "provider": "gemini",
-            "source": "gemini",
-            "api_key": api_key,
-            "model": model,
-            "base_url": "",
         }
 
     return None

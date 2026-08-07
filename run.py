@@ -122,13 +122,13 @@ def test_login(config: dict) -> None:
 
 
 def test_llm(config: dict) -> None:
-    """Test configured AI provider (supports legacy Gemini config)."""
+    """Test the configured AI provider."""
     from src.llm_helper import LLMHelper, resolve_llm_config
 
     resolved = resolve_llm_config(config, require_enabled=False)
     if not resolved:
         print("✗ No LLM API key/config found")
-        print("  Add an `llm:` block (or legacy `gemini:` block) to config.yaml")
+        print("  Add an enabled `llm:` block with an API key to config.yaml")
         return
 
     provider_name = resolved.get("source") or resolved.get("provider")
@@ -180,12 +180,7 @@ Examples:
     parser.add_argument(
         '--test-llm',
         action='store_true',
-        help='Test configured AI provider (llm or legacy gemini config)'
-    )
-    parser.add_argument(
-        '--test-gemini',
-        action='store_true',
-        help='Alias for --test-llm (legacy name)'
+        help='Test configured AI provider'
     )
     
     args = parser.parse_args()
@@ -198,7 +193,7 @@ Examples:
         test_login(config)
         return
     
-    if args.test_llm or args.test_gemini:
+    if args.test_llm:
         test_llm(config)
         return
     
