@@ -1,6 +1,7 @@
 wg_gesucht:
-  email: "you@example.com"
-  password: "your-password"
+  # Set WG_GESUCHT_EMAIL and WG_GESUCHT_PASSWORD before starting the bot.
+  email: "${WG_GESUCHT_EMAIL}"
+  password: "${WG_GESUCHT_PASSWORD}"
 
 search:
   city: "Hamburg"
@@ -22,7 +23,7 @@ llm:
   enabled: false
   # Supported: gemini, anthropic, openai, openrouter, groq, together, openai_compatible
   provider: "gemini"
-  api_key: ""  # Optional API key for the selected provider
+  api_key: "${LLM_API_KEY:-}"  # Set LLM_API_KEY when personalization is enabled
   model: "gemini-1.5-flash"
   # Optional custom endpoint (mostly for OpenAI-compatible providers)
   base_url: ""

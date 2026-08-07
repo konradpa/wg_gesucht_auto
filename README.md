@@ -36,8 +36,16 @@ cp message.example.txt message.txt
 3. Test the login.
 
 ```bash
+export WG_GESUCHT_EMAIL='you@example.com'
+read -rsp 'WG-Gesucht password: ' WG_GESUCHT_PASSWORD; export WG_GESUCHT_PASSWORD; echo
+read -rsp 'LLM API key (optional): ' LLM_API_KEY; export LLM_API_KEY; echo
 python run.py --test-login
 ```
+
+The example config uses `${WG_GESUCHT_EMAIL}`, `${WG_GESUCHT_PASSWORD}`, and `${LLM_API_KEY}` placeholders.
+They are read from environment variables at startup, so the actual credentials do not need
+to be stored in `config.yaml`. These `export` values apply only to the current shell session;
+use a protected service environment file for a persistent systemd setup.
 
 4. Search without sending messages.
 

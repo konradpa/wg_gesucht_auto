@@ -103,16 +103,6 @@ def main():
         print("\n✓ Nothing to do. Both files already exist.")
         return
 
-    # ── WG-Gesucht Account ───────────────────────────────────────────────
-
-    email = ""
-    password = ""
-
-    if config_path:
-        section("WG-Gesucht Account")
-        email = ask("Email")
-        password = ask("Password")
-
     # ── Search Settings ──────────────────────────────────────────────────
 
     city = "Hamburg"
@@ -146,7 +136,6 @@ def main():
 
     llm_enabled = False
     llm_provider = "gemini"
-    llm_api_key = ""
     llm_model = "gemini-1.5-flash"
     llm_base_url = ""
 
@@ -184,7 +173,7 @@ def main():
                 "together": "https://api.together.xyz/v1",
             }
 
-            llm_api_key = ask("API key")
+            print("  Set LLM_API_KEY in your environment before starting the bot.")
             llm_model = ask("Model name", default_model_by_provider[llm_provider])
 
             if llm_provider == "openai_compatible":
@@ -224,8 +213,9 @@ def main():
             bezirk_yaml = " []"
 
         config_content = f"""wg_gesucht:
-  email: {yaml_quote(email)}
-  password: {yaml_quote(password)}
+  # Set WG_GESUCHT_EMAIL and WG_GESUCHT_PASSWORD before starting the bot.
+  email: "${{WG_GESUCHT_EMAIL}}"
+  password: "${{WG_GESUCHT_PASSWORD}}"
 
 search:
   city: {yaml_quote(city)}
@@ -241,7 +231,7 @@ search:
 llm:
   enabled: {"true" if llm_enabled else "false"}
   provider: {yaml_quote(llm_provider)}
-  api_key: {yaml_quote(llm_api_key)}
+  api_key: "${{LLM_API_KEY:-}}"  # Set LLM_API_KEY when personalization is enabled
   model: {yaml_quote(llm_model)}
   base_url: {yaml_quote(llm_base_url)}
 

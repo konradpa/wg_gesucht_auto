@@ -5,6 +5,8 @@ Run this script to start the bot with scheduled execution
 """
 
 import argparse
+import os
+import re
 import time
 import sys
 from pathlib import Path
@@ -18,8 +20,36 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.bot import WgGesuchtBot
 
 
+ENV_PLACEHOLDER = re.compile(
+    r'\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-(.*?))?\}'
+)
+
+
+def expand_environment_variables(config_text: str) -> str:
+    """Expand ${VAR} and ${VAR:-default} placeholders in config text."""
+    missing = set()
+
+    def replace(match: re.Match) -> str:
+        name, default = match.group(1), match.group(2)
+        value = os.environ.get(name)
+        if value:
+            return value
+        if default is not None:
+            return default
+        missing.add(name)
+        return match.group(0)
+
+    expanded = ENV_PLACEHOLDER.sub(replace, config_text)
+    if missing:
+        names = ', '.join(sorted(missing))
+        print(f"✗ Missing environment variable(s): {names}")
+        print("  Set them before starting the bot, for example: export WG_GESUCHT_EMAIL=...")
+        sys.exit(1)
+    return expanded
+
+
 def load_config() -> dict:
-    """Load configuration from config.yaml"""
+    """Load config.yaml, expanding ${ENV_VAR} placeholders from the environment."""
     config_path = Path(__file__).parent / "config.yaml"
     
     if not config_path.exists():
@@ -27,8 +57,8 @@ def load_config() -> dict:
         print("  Please copy config.example.yaml to config.yaml and fill in your details")
         sys.exit(1)
     
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
+    config_text = config_path.read_text(encoding='utf-8')
+    return yaml.safe_load(expand_environment_variables(config_text))
 
 
 def run_once(config: dict, dry_run: bool = None) -> None:
