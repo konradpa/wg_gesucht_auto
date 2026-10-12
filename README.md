@@ -4,7 +4,155 @@ A Python bot that finds WG-Gesucht listings matching your criteria and sends a m
 
 It can filter listings by district, price, size, category, and rental type. Message personalization with Gemini, Anthropic, OpenAI, OpenRouter, Groq, Together, or another OpenAI-compatible endpoint is optional.
 
+ImmoScout website search is being investigated separately. The working JSON
+endpoint, session requirements, and standalone search probe are documented in
+[IMMOSCOUT_WEB_API.md](IMMOSCOUT_WEB_API.md). It is not yet integrated into `run.py`.
+The standalone probe supports automatic token renewal with a Go-only helper:
+`python probe_immoscout_web.py --refresh-waf --region /de/hamburg/hamburg`.
+Build instructions are in the linked document.
+ImmoScout now has a complete one-shot runner, `run_immoscout.py`, using its
+own config and template. `run.py` still handles WG-Gesucht.
+
+```bash
+# Preview once, including configured personalization:
+.venv/bin/python run_immoscout.py --dry-run
+# Search, personalize and send once, then exit:
+.venv/bin/python run_immoscout.py --send
+# Preview without transferring the template to an LLM:
+.venv/bin/python run_immoscout.py --dry-run --no-llm
+```
+
+The runner reads `config.immoscout.yaml` (override with `--config`) and
+`message_immoscout.txt`. Add `llm` settings in that config; `${LLM_API_KEY:-}`
+is resolved from the process environment or the adjacent private `.env.local`.
+Preview mode is the default and sends no contact requests. No scheduler is
+started. ImmoScout runtime settings:
+
+```yaml
+immoscout:
+  settings:
+    max_messages_per_run: 1
+    max_messages_per_day: 5
+    delay_between_messages: 20
+    skip_wbs: true
+```
+
+Premium restrictions, WBS indicators, and apartment-exchange advertisements
+are checked before personalization. This is conservative screening, not a
+guarantee that all eligibility requirements are detected. The fresh form/profile
+is validated and its nonce reloaded immediately before submission. Invalid LLM
+output or API errors stop the run rather than silently sending the template.
+
+Confirmed contacts and pending/rejected/unknown attempts are kept separately in
+`immoscout_contacts.json`; the runner also recognizes previous `is24:` contacts
+in `contacted.json`. It does not overwrite WG-Gesucht history. Attempts are
+recorded before POST, so an interrupted or uncertain submission is never
+retried automatically. Review account messages before manually clearing such
+entries. A local run lock prevents concurrent runners from duplicating sends.
+The low-level contact probe is still available; see
+[IMMOSCOUT_CONTACT_API.md](IMMOSCOUT_CONTACT_API.md).
+
+### ImmoScout search configuration
+
+The standalone website probe reads `immoscout.search` from its own
+`config.immoscout.yaml`. `config.yaml` configures WG-Gesucht.
+Create the ImmoScout config with:
+
+```bash
+cp config.immoscout.example.yaml config.immoscout.yaml
+```
+
+Browser session cookies can be stored under `immoscout.auth.cookies` in this
+ignored private file: only `SSO` and `SSO-HMAC` are needed in the verified
+search/form/profile flow. The generated WAF token is never configured or stored.
+The contact probe now
+reads these cookies by default (the legacy `--curl-file` input is optional).
+It fetches the saved applicant profile directly from ImmoScout. Search also
+reads the configured session and User-Agent; `IMMOSCOUT_WAF_TOKEN`, the hidden
+token prompt, and `IMMOSCOUT_USER_AGENT` override their corresponding values.
+WAF generation/renewal is enabled by default in both probes; `--no-refresh-waf`
+disables it for diagnostics. It does not refresh SSO
+login or rewrite cookies in the config. Copy new SSO cookies when login expires.
+The contact probe validates/generates the token in its own session before
+preparing a draft. Reduced-cookie POST delivery has not yet been tested.
+
+```yaml
+immoscout:
+  search:
+    region: "/de/berlin/berlin"
+    bezirk: ["Pankow", "Friedrichshain-Kreuzberg"]  # [] = all districts
+    ortsteil: []  # e.g. ["Prenzlauer Berg", "Kreuzberg"]
+    max_warm_rent: 1500  # inclusive EUR; unknown warm rent is excluded
+    min_size: 0
+    min_rooms: 0
+    max_pages: 5
+    skip_paywalled: true
+```
+
+```bash
+.venv/bin/python probe_immoscout_web.py --refresh-waf
+# Optional overrides; --bezirk can be repeated:
+.venv/bin/python probe_immoscout_web.py --refresh-waf --bezirk Pankow --max-price 1200 --max-pages 2
+```
+
+Berlin districts are assigned locally using listing coordinates and bundled
+official district polygons. Missing coordinates fall back to an exact official
+neighborhood-to-district mapping (e.g. Prenzlauer Berg → Pankow). Advertiser
+coordinates may be approximate. Invalid or outside coordinates and unknown
+locations are excluded when a district filter is set. Postal codes and
+substring matches are not used. No addresses are sent to a geocoding service.
+
+Supported districts: Mitte, Friedrichshain-Kreuzberg, Pankow,
+Charlottenburg-Wilmersdorf, Spandau, Steglitz-Zehlendorf, Tempelhof-Schöneberg,
+Neukölln, Treptow-Köpenick, Marzahn-Hellersdorf, Lichtenberg, Reinickendorf.
+Umlaut spellings such as `Neukoelln` are also accepted. Unknown names fail with
+an error. The data and provenance are in [data/berlin/SOURCE.md](data/berlin/SOURCE.md).
+
+`ortsteil` filters exact official Berlin neighborhoods using the bundled ALKIS
+neighborhood polygons, with exact neighborhood-name fallback if coordinates
+are absent. Use `bezirk: []` to filter by neighborhoods alone. When both lists
+are populated, both must match. For example:
+
+```yaml
+    bezirk: []
+    ortsteil: ["Prenzlauer Berg", "Kreuzberg", "Neukölln"]
+```
+
+Here `Neukölln` refers to the neighborhood, excluding other neighborhoods of the
+Neukölln district such as Britz or Buckow. The probe also accepts repeatable
+`--ortsteil` arguments. Exports include `berlin_ortsteil` and `ortsteil_source`.
+
+Local exclusions leave server pagination intact; the probe continues scanning
+up to `max_pages` even when a page has no matches. A single-page JSON export
+contains the normalized page; multiple pages export `{"pages": [...]}`.
+`--include-premium` overrides premium exclusion for inspection. These settings
+control the read-only probe and `run_immoscout.py`, not WG-Gesucht's `run.py`.
+The one-shot runner checks contact requirements in the exposé before sending.
+
 ## Setup
+
+Daily sending limits are configured separately for each platform:
+
+```yaml
+# config.yaml (WG-Gesucht)
+settings:
+  max_messages_per_day: 5
+
+# config.immoscout.yaml
+immoscout:
+  settings:
+    max_messages_per_day: 5
+```
+
+The WG-Gesucht bot, ImmoScout one-shot runner and contact probe enforce these limits. Each actual
+send attempt consumes a slot before POST; failures and uncertain outcomes also
+count. Read-only searches and draft preparation consume no slots. `0` disables
+sending. The existing WG-Gesucht `max_messages_per_run` still applies too.
+Counts are stored in the ignored `daily_message_counts.json`, survive restarts,
+and reset by calendar day in Europe/Berlin. A separate file lock prevents
+parallel local processes from exceeding the quota. Keep this file when
+deploying or restarting; multiple machines with separate counters are not
+coordinated. A daily cap does not guarantee avoidance of bot detection.
 
 Requires Python 3.9 or newer.
 
