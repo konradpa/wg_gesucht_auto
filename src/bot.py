@@ -11,6 +11,7 @@ from typing import Optional, List, Dict, Set
 from .wg_api import WgGesuchtClient
 from .llm_helper import LLMHelper
 from .logger import get_logger
+from .daily_message_limit import DailyMessageLimit, DailyMessageLimitReached
 
 
 class WgGesuchtBot:
@@ -475,6 +476,13 @@ class WgGesuchtBot:
         delay = settings.get('delay_between_messages', 10)
         
         logger.set_stats(dry_run=dry_run)
+        daily_limit = DailyMessageLimit('wg_gesucht', settings.get('max_messages_per_day', 5))
+        if not dry_run:
+            max_messages = min(max_messages, daily_limit.remaining())
+            if max_messages == 0:
+                logger.info("Daily message limit reached; no messages will be sent")
+                logger.end_run(success=True)
+                return 0
         
         if dry_run:
             logger.info("🔸 Running in DRY RUN mode (no messages will be sent)")
@@ -536,6 +544,11 @@ class WgGesuchtBot:
                 logger.info(f"  {message[:100]}...")
                 logger.log_contacted(offer_id, title, success=True)
             else:
+                try:
+                    daily_limit.reserve()
+                except DailyMessageLimitReached as error:
+                    logger.info(str(error))
+                    break
                 result = self.client.contact_offer(offer_id, message)
                 if result:
                     logger.info(f"  ✓ Message sent!")

@@ -31,6 +31,7 @@ llm:
 settings:
   interval_minutes: 20
   max_messages_per_run: 2
+  max_messages_per_day: 5  # per Europe/Berlin day; 0 disables sending
   delay_between_messages: 20  # seconds between messages
   dry_run: true  # Set to false to actually send messages
   mark_contacted_in_dry_run: false  # Track dry-run offers as contacted
