@@ -28,6 +28,24 @@ PROFILE = {"firstname": "Test", "lastname": "Applicant", "email": "test@example.
 
 
 class ContactTests(unittest.TestCase):
+    def test_formal_salutation_requires_explicit_gender_and_last_name(self):
+        form = parse_contact_form(HTML, URL)
+        for last_name, gender, expected in [
+            ("Müller", "Frau", "Sehr geehrte Frau Müller"),
+            ("Schmidt", "Herr", "Sehr geehrter Herr Schmidt"),
+            ("Schmidt", "MALE", "Sehr geehrter Herr Schmidt"),
+            ("Müller", "", "Sehr geehrte Damen und Herren"),
+            ("", "Frau", "Sehr geehrte Damen und Herren"),
+            ("Example GmbH", "Herr", "Sehr geehrte Damen und Herren"),
+        ]:
+            form.recipient_last_name, form.recipient_salutation = last_name, gender
+            self.assertEqual(form.formal_salutation(), expected)
+
+    def test_realtor_full_name_and_salutation_are_parsed(self):
+        html = HTML.replace(' userProfile:', ' realtor: {"firstName":"Test","lastName":"Müller","salutation":"Frau"}, userProfile:')
+        form = parse_contact_form(html, URL)
+        self.assertEqual(form.formal_salutation(), "Sehr geehrte Frau Müller")
+
     def prepared(self):
         return prepare_contact(parse_contact_form(HTML, URL), "Application text", PROFILE)
 

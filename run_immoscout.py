@@ -60,6 +60,21 @@ def needs_wbs(form, title):
     return form.wbs_required or bool(re.search(r"\bWBS\b|Wohnberechtigungsschein", text, re.I))
 
 
+def formal_message(text, form):
+    """Enforce the verified formal greeting in LLM and template output."""
+    lines = text.strip().splitlines()
+    greeting = form.formal_salutation() + ","
+    if lines and (re.match(r"^(Moin|Hallo|Guten Tag|Sehr geehrt\w*)\b", lines[0], re.I)
+                  or lines[0].strip() == "{salutation},"):
+        remainder = lines[0].split(",", 1)[1].strip() if "," in lines[0] else ""
+        lines[0] = greeting
+        if remainder:
+            lines.insert(1, remainder)
+    else:
+        lines.insert(0, greeting)
+    return "\n".join(lines).replace("{name}", form.recipient_name).replace("{salutation}", form.formal_salutation())
+
+
 class ContactHistory:
     """Crash-safe ledger. Pending/unknown attempts are never retried automatically."""
     def __init__(self, root):
@@ -180,12 +195,13 @@ def run_once(config_path, send=False, no_llm=False, root=ROOT):
                     continue
                 # Validate required applicant fields before any LLM request.
                 try:
-                    prepare_contact(form, template.replace("{name}", form.recipient_name), {})
+                    prepare_contact(form, formal_message(template, form), {})
                 except ImmoScoutContactError as error:
                     print(f"Skip {identifier}: {error}")
                     continue
                 if llm:
-                    details = {**listing, "listing_type": "Wohnung", "description": form.description}
+                    details = {**listing, "listing_type": "Wohnung", "description": form.description,
+                               "formal_salutation": form.formal_salutation()}
                     try:
                         message = llm._generate_text(llm._build_prompt(template, details, form.recipient_name))
                     except Exception:
@@ -195,7 +211,8 @@ def run_once(config_path, send=False, no_llm=False, root=ROOT):
                     if skip_wbs and re.search(r"\bWBS\b|Wohnberechtigungsschein", message, re.I):
                         raise ValueError("Personalized message contains an unsupported WBS claim")
                 else:
-                    message = template.replace("{name}", form.recipient_name)
+                    message = template
+                message = formal_message(message, form)
                 print(f"{identifier}: {listing['title']} | {listing['warm_rent']} EUR warm | {listing['url']}")
                 if not send:
                     print(message)

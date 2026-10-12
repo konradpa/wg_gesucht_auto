@@ -117,6 +117,19 @@ class ContactForm:
     description: str = ""
     premium_required: bool = False
     wbs_required: bool = False
+    recipient_last_name: str = ""
+    recipient_salutation: str = ""
+
+    def formal_salutation(self):
+        name = self.recipient_last_name.strip()
+        gender = self.recipient_salutation.strip().casefold()
+        if not name or re.search(r"\b(gmbh|mbh|ag|kg|firma)\b", name, re.I):
+            return "Sehr geehrte Damen und Herren"
+        if gender in ("herr", "herrn", "male"):
+            return "Sehr geehrter Herr " + name
+        if gender in ("frau", "female"):
+            return "Sehr geehrte Frau " + name
+        return "Sehr geehrte Damen und Herren"
 
 
 @dataclass(repr=False)
@@ -187,13 +200,15 @@ def parse_contact_form(html, url):
         name = realtor.get("firstName") or realtor.get("lastName") or "zusammen"
     except ImmoScoutContactError:
         name = "zusammen"
+        realtor = {}
     description = _DescriptionParser()
     description.feed(html)
     premium_required = bool(re.search(r"\bisFreemium\s*:\s*true\b", script)
                             or re.search(r"\bppaWithPremiumProfile\s*:\s*true\b", script))
     return ContactForm(url, form, configuration, exists, name,
                        "\n".join(description.parts), premium_required,
-                       bool(re.search(r"\bcertificateOfEligibilityNeeded\s*:\s*true\b", script)))
+                       bool(re.search(r"\bcertificateOfEligibilityNeeded\s*:\s*true\b", script)),
+                       str(realtor.get("lastName") or ""), str(realtor.get("salutation") or ""))
 
 
 def prepare_contact(form, message, profile, share_profile=False, privacy_policy_accepted=False):

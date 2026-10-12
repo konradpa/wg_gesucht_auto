@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import yaml
 
-from run_immoscout import run_once, run_lock, needs_wbs
+from run_immoscout import run_once, run_lock, needs_wbs, formal_message
 from src.immoscout_contact import ContactForm, ImmoScoutDeliveryUnknown
 from src.immoscout_web_api import SearchPage
 
@@ -122,7 +122,7 @@ class OneRunTests(unittest.TestCase):
         with patch("run_immoscout.LLMHelper.from_config", return_value=llm):
             self.assertEqual(self.run_bot(), 1)
         payload = self.client.send.call_args.args[0].payload
-        self.assertEqual(payload["personalData"]["message"], llm._generate_text.return_value)
+        self.assertEqual(payload["personalData"]["message"], formal_message(llm._generate_text.return_value, form()))
         self.assertEqual(self.client.get_form.call_count, 2)
 
     def test_llm_failure_stops_without_post_or_quota(self):
@@ -138,6 +138,13 @@ class OneRunTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "already active"):
                 with run_lock(self.root):
                     pass
+
+    def test_formal_greeting_keeps_single_line_body_and_does_not_duplicate_greetings(self):
+        person = form(recipient_last_name="Müller", recipient_salutation="Frau")
+        self.assertEqual(formal_message("Moin Test, ich suche eine Wohnung.", person),
+                         "Sehr geehrte Frau Müller,\nich suche eine Wohnung.")
+        message = "Sehr geehrte Frau Müller,\n\nich suche eine Wohnung."
+        self.assertEqual(formal_message(message, person), message)
 
 
 if __name__ == "__main__":
