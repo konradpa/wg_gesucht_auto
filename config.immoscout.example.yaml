@@ -1,0 +1,32 @@
+# ImmoScout only. Used by probe_immoscout_web.py.
+immoscout:
+  settings:
+    max_messages_per_day: 5  # per Europe/Berlin day; 0 disables sending
+    max_messages_per_run: 1
+    delay_between_messages: 20
+    skip_wbs: true
+  # Private browser session. Paste current values here; this real config is ignored by Git.
+  auth:
+    user_agent: ""  # empty = default browser User-Agent
+    cookies:
+      SSO: ""
+      SSO-HMAC: ""
+  search:
+    region: "/de/berlin/berlin"
+    # Official Berlin districts, e.g. ["Pankow", "Friedrichshain-Kreuzberg"].
+    # [] = all districts. Unknown locations are excluded when this list is set.
+    bezirk: []
+    # Exact neighborhoods, e.g. ["Prenzlauer Berg", "Kreuzberg"]. [] = all.
+    # If both lists are set, both must match. For neighborhoods only, use bezirk: [].
+    ortsteil: []
+    max_warm_rent: 1500  # EUR, inclusive; offers without warm rent are excluded
+    min_size: 0         # m²; 0 = no minimum
+    min_rooms: 0        # 0 = no minimum
+    max_pages: 5        # search pages scanned by the standalone probe
+    skip_paywalled: true
+
+llm:
+  enabled: false
+  provider: gemini
+  api_key: "${LLM_API_KEY:-}"
+  model: gemini-3.5-flash

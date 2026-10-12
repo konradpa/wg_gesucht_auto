@@ -238,6 +238,7 @@ llm:
 settings:
   interval_minutes: {interval}
   max_messages_per_run: {max_messages}
+  max_messages_per_day: 5
   delay_between_messages: 20
   dry_run: true
   mark_contacted_in_dry_run: false
@@ -246,6 +247,12 @@ settings:
 """
         config_path.write_text(config_content, encoding="utf-8")
         print(f"\n✓ Created config.yaml")
+        immoscout_path = config_path.parent / "config.immoscout.yaml"
+        if not immoscout_path.exists():
+            example = Path(__file__).parent / "config.immoscout.example.yaml"
+            immoscout_path.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
+            immoscout_path.chmod(0o600)
+            print("✓ Created config.immoscout.yaml")
 
     # ── Generate message.txt ─────────────────────────────────────────────
 
