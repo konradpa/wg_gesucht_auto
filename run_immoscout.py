@@ -126,9 +126,17 @@ def run_once(config_path, send=False, no_llm=False, root=ROOT):
     settings = ImmoScoutSettings.from_yaml(config_path)
     quota = DailyMessageLimit("immoscout", options.get("max_messages_per_day", 5), root / "daily_message_counts.json")
     history = ContactHistory(root)
-    maximum = min(max_run, quota.remaining()) if send else max_run
+    remaining = quota.remaining() if send else max_run
+    maximum = min(max_run, remaining) if send else max_run
     if maximum == 0:
-        print("No send slots available; run finished.")
+        if max_run == 0:
+            print("Run disabled: immoscout.settings.max_messages_per_run is 0.")
+        elif quota.limit == 0:
+            print("Sending disabled: immoscout.settings.max_messages_per_day is 0.")
+        else:
+            print(f"Daily limit reached: {quota.limit}/{quota.limit} send attempts used. "
+                  "Failed/unknown attempts also count. Resets at 00:00 Europe/Berlin. "
+                  "Use --dry-run to preview without sending.")
         return 0
     auth = ImmoScoutAuth.from_yaml(config_path, require_login=True)
     template_path = Path(block.get("message_file", "message_immoscout.txt"))
