@@ -8,11 +8,23 @@ venv/
 
 # Config and data files (contain sensitive info)
 config.yaml
+config.immoscout.yaml
 session.json
 contacted.json
+daily_message_counts.json
+daily_message_counts.json.lock
+immoscout_contacts.json
+immoscout_run.lock
 message.txt
 messages_export.json
 captured_requests.json
+contact_request*.curl
+immoscout_contact*.json
+message_immoscout.txt
+*.har
+immoscout_search*.json
+bin/immoscout-waf
+bin/immoscout-waf.exe
 debug_screenshot.png
 .env
 .env.*
