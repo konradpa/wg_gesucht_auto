@@ -1,4 +1,15 @@
 # Python
+/tests/
+/.pytest_cache/
+/.coverage
+/htmlcov/
+
+# Local development probes and investigation notes
+/probe_immoscout_contact.py
+/probe_immoscout_web.py
+/src/immoscout_api.py
+/IMMOSCOUT_WEB_API.md
+
 __pycache__/
 *.py[cod]
 *$py.class

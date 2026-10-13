@@ -1,4 +1,4 @@
-# ImmoScout only. Used by run_immoscout.py and the standalone probes.
+# ImmoScout only. Used by run_immoscout.py.
 immoscout:
   settings:
     max_messages_per_day: 5  # per Europe/Berlin day; 0 disables sending

@@ -78,8 +78,7 @@ See [geodata provenance](data/berlin/SOURCE.md).
 
 The runner checks premium restrictions, WBS requirements (`settings.skip_wbs`)
 and apartment exchanges before sending. ImmoScout uses verified formal salutations.
-These checks cannot detect every eligibility requirement. API details and the
-read-only search probe are documented in [IMMOSCOUT_WEB_API.md](IMMOSCOUT_WEB_API.md).
+These checks cannot detect every eligibility requirement.
 
 ## Personalization and limits
 
@@ -142,13 +141,6 @@ sudo journalctl -u immoscout-bot.service -f
 sudo systemctl disable --now wg-gesucht-bot.service
 sudo systemctl disable --now immoscout-bot.timer
 sudo systemctl stop immoscout-bot.service  # Stop any active invocation too
-```
-
-## Checks
-
-```bash
-.venv/bin/python -m unittest discover -s tests -q
-(cd tools/immoscout_waf && go test ./...)
 ```
 
 Unofficial project; not affiliated with either platform. [MIT license](LICENSE).
