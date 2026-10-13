@@ -1,4 +1,4 @@
-# ImmoScout only. Used by probe_immoscout_web.py.
+# ImmoScout only. Used by run_immoscout.py and the standalone probes.
 immoscout:
   settings:
     max_messages_per_day: 5  # per Europe/Berlin day; 0 disables sending
@@ -22,7 +22,7 @@ immoscout:
     max_warm_rent: 1500  # EUR, inclusive; offers without warm rent are excluded
     min_size: 0         # m²; 0 = no minimum
     min_rooms: 0        # 0 = no minimum
-    max_pages: 5        # search pages scanned by the standalone probe
+    max_pages: 5        # search pages scanned per run
     skip_paywalled: true
 
 llm:
