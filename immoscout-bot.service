@@ -1,0 +1,13 @@
+[Unit]
+Description=ImmoScout apartment search and applications (one run)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/wg_gesucht_auto
+ExecStart=/home/YOUR_USERNAME/wg_gesucht_auto/.venv/bin/python run_immoscout.py --send
+UMask=0077
+TimeoutStartSec=infinity
+

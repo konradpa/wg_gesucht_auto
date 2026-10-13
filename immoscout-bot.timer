@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ImmoScout independently every five minutes after completion
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+Unit=immoscout-bot.service
+
+[Install]
+WantedBy=timers.target
